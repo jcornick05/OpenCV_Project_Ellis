@@ -12,12 +12,15 @@ def on_change(val):
     cv2.imshow(winName, imageCopy)
 
 #-----------------------------------------------------------------#
+
 def on_change_move(val):
     #print(val)
     x_val = int(cv2.getTrackbarPos("x", winName))
     y_val = int(cv2.getTrackbarPos("y", winName))
     r_val = int(cv2.getTrackbarPos("rotation", winName))
     #imageCopy = image.copy()
+
+    global updated
 
     rotated = imutils.rotate(image, r_val)
     updated = imutils.translate(rotated, x_val, y_val)
@@ -34,6 +37,7 @@ args = vars(ap.parse_args())
 image = cv2.imread(args["image"]) # The image the user would like to use
 winName = "Default" # Name of the window
 
+EDITED = False
 CONTINUE = True
 while CONTINUE:
     print("What would you like to do?")
@@ -42,6 +46,7 @@ while CONTINUE:
         cv2.imshow(winName, image)
         cv2.createTrackbar('slider', winName, 0, 255, on_change) # Creates the trackbar
         cv2.waitKey(0)
+        EDITED = False
     elif option == "move":
         cv2.imshow(winName, image)
         cv2.createTrackbar('rotation', winName, 0, 360, on_change_move) # Creates the trackbar
@@ -50,6 +55,15 @@ while CONTINUE:
         cv2.createTrackbar('y', winName, 0, 100, on_change_move) # Creates the trackbar
         cv2.setTrackbarMin('y', winName, -100)
         cv2.waitKey(0)
+        EDITED = True
+    elif option == "save":
+        if EDITED:
+            print("What would you like to name your image?")
+            fname = str(input(" --> "))
+            #if updated:
+            cv2.imwrite("C:/Users/George/OneDrive/Desktop/ADVHCS/projects/OpenCV_Project/edited/" + fname, updated)
+        else:
+            print("You haven't changed the image!")
     else:
         CONTINUE = False
         
