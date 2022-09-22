@@ -2,6 +2,7 @@
 import argparse
 import cv2
 import imutils
+import os
 
 #-----------------------------------------------------------------#
 def on_change(val):
@@ -19,11 +20,12 @@ def on_change_move(val):
     y_val = int(cv2.getTrackbarPos("y", winName))
     r_val = int(cv2.getTrackbarPos("rotation", winName))
     #imageCopy = image.copy()
-
+    
     global updated
 
     rotated = imutils.rotate(image, r_val)
     updated = imutils.translate(rotated, x_val, y_val)
+
     cv2.imshow(winName, updated)
 
 #-----------------------------------------------------------------#
@@ -37,35 +39,42 @@ args = vars(ap.parse_args())
 image = cv2.imread(args["image"]) # The image the user would like to use
 winName = "Default" # Name of the window
 
+editPhrase = ["tester", "move"]
 EDITED = False
 CONTINUE = True
 while CONTINUE:
+    cv2.imshow(winName, image)
     print("What would you like to do?")
     option = str(input(" --> "))
-    if option == "show":
-        cv2.imshow(winName, image)
-        cv2.createTrackbar('slider', winName, 0, 255, on_change) # Creates the trackbar
+
+    if option in editPhrase:
+        if option == "tester":
+            cv2.createTrackbar('slider', winName, 0, 255, on_change) # Creates the trackbar
+        elif option == "move":
+            cv2.createTrackbar('rotation', winName, 0, 360, on_change_move) # Creates the trackbar
+            cv2.createTrackbar('x', winName, 0, 100, on_change_move) # Creates the trackbar
+            cv2.setTrackbarMin('x', winName, -100) # Redefines trackbar bounds
+            cv2.createTrackbar('y', winName, 0, 100, on_change_move) # Creates the trackbar
+            cv2.setTrackbarMin('y', winName, -100) # Redefines trackbar bounds
+            
         cv2.waitKey(0)
-        EDITED = False
-    elif option == "move":
-        cv2.imshow(winName, image)
-        cv2.createTrackbar('rotation', winName, 0, 360, on_change_move) # Creates the trackbar
-        cv2.createTrackbar('x', winName, 0, 100, on_change_move) # Creates the trackbar
-        cv2.setTrackbarMin('x', winName, -100)
-        cv2.createTrackbar('y', winName, 0, 100, on_change_move) # Creates the trackbar
-        cv2.setTrackbarMin('y', winName, -100)
-        cv2.waitKey(0)
-        EDITED = True
+        image = updated # Redefines the updated image
+        cv2.destroyAllWindows() 
+        EDITED = True # Allows the user to save edits
+
     elif option == "save":
         if EDITED:
             print("What would you like to name your image?")
             fname = str(input(" --> "))
-            #if updated:
-            cv2.imwrite("C:/Users/George/OneDrive/Desktop/ADVHCS/projects/OpenCV_Project/edited/" + fname, updated)
+            cv2.imwrite("C:/Users/George/OneDrive/Desktop/ADVHCS/projects/OpenCV_Project/edited/" + fname, image) # Saves the edited image
         else:
             print("You haven't changed the image!")
-    else:
+
+    elif option == "close":
         CONTINUE = False
+
+    else:
+        print("Not a valid response!")
         
 
     
