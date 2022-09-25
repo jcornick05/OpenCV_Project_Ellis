@@ -5,6 +5,26 @@ import cv2
 import imutils
 import numpy as np
 
+#-----------------------------------------------------------------#
+
+def getInput(choices):
+    helpTracker = 0
+    while True:
+        choice = str(input(" --> ")).lower()
+        if choice == "options":
+            print("Your possible choices are the following:")
+            for i in range(len(choices)):
+                print(str(i+1) + ") " + choices[i])
+        elif choice in choices:
+            return choice
+        else:
+            print("Please enter a valid option!")
+            helpTracker += 1
+            if helpTracker >= 3:
+                print("You can see all your options by entering 'Options'")
+
+#-----------------------------------------------------------------#
+
 def displayHistogram(image):
     chans = cv2.split(image)
     color = "b", "g", "r"
@@ -73,16 +93,19 @@ args = vars(ap.parse_args())
 image = cv2.imread(args["image"]) # The image the user would like to use
 winName = "Default" # Name of the window
 
-editPhrase = ["tester", "move", "arithmetic"]
+editOptions = ["tester", "move", "arithmetic"]
+intialOptions = ["edit", "data", "save", "quit"]
+dataOptions = ["show histogram"]
 EDITED = False
 CONTINUE = True
 DISPLAY_HIST = False
 while CONTINUE:
     cv2.imshow(winName, image)
     print("What would you like to do?")
-    option = str(input(" --> ")).lower()
+    option = getInput(intialOptions)
 
-    if option in editPhrase:
+    if option == "edit":
+        option = getInput(editOptions)
         if option == "tester":
             cv2.createTrackbar('slider', winName, 0, 255, on_change) # Creates the trackbar
         elif option == "move":
@@ -101,9 +124,11 @@ while CONTINUE:
         cv2.destroyAllWindows() 
         EDITED = True # Allows the user to save edits
 
-    elif option == "show histogram":
-        displayHistogram(image)
-        DISPLAY_HIST = True
+    elif option == "data":
+        option = getInput(dataOptions)
+        if option == "show histogram":
+            displayHistogram(image)
+            DISPLAY_HIST = True
 
     elif option == "save":
         if EDITED:
@@ -113,11 +138,11 @@ while CONTINUE:
         else:
             print("You haven't changed the image!")
 
-    elif option == "close":
+    elif option == "quit":
         CONTINUE = False
 
     else:
-        print("Not a valid response!")
+        print("ERROR: Recieved a 'valid' input with no function")
         
 
     
