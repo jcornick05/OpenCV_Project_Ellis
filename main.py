@@ -44,7 +44,6 @@ def displayHistogram(image):
 #-----------------------------------------------------------------#
 
 def on_change(val):
-    #print(val)
     imageCopy = image.copy()
 
     cv2.putText(imageCopy, str(val), (0, imageCopy.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 0), 4)
@@ -97,17 +96,18 @@ def on_change_blur(val):
         if type == 0:
             updated = cv2.blur(image, (intensity, intensity))
         elif type == 1:
-            if (intensity % 2) > 0:
-                updated = cv2.GaussianBlur(image, (intensity, intensity), 0)
-            else:
-                print("Gaussian blur does not work for even values!")
-                updated = image
+            if (intensity % 2) == 0:
+                intensity -= 1
+                cv2.setTrackbarPos("intensity", winName, intensity)
+
+            updated = cv2.GaussianBlur(image, (intensity, intensity), 0)
         else:
-            if (intensity % 2) > 0:
-                updated = cv2.medianBlur(image, intensity)
-            else:
-                print("Median blur does not work for even values!")
-                updated = image
+            if (intensity % 2) == 0:
+                intensity -= 1
+                cv2.setTrackbarPos("intensity", winName, intensity)
+
+            updated = cv2.medianBlur(image, intensity)
+            
 
     cv2.imshow(winName, updated)
 
@@ -123,11 +123,38 @@ def on_change_sharpen(val):
     if intensity == 0:
         updated = image
     else:
-        if (intensity % 2) > 0:
-            updated = cv2.bilateralFilter(image, range, intensity, intensity)
-        else:
-            print("Bilateral blurring does not work for even intensity values!")
-            updated = image
+        if (intensity % 2) == 0:
+                intensity -= 1
+                cv2.setTrackbarPos("intensity", winName, intensity)
+
+        updated = cv2.bilateralFilter(image, range, intensity, intensity)
+
+    cv2.imshow(winName, updated)
+
+#-----------------------------------------------------------------#
+
+def on_change_threshold(val):
+    type = int(cv2.getTrackbarPos("type", winName))
+    blur = int(cv2.getTrackbarPos("blur", winName))
+
+    global updated
+
+    converted = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    if blur == 0:
+        blurred = image
+    else:
+        if (blur % 2) == 0:
+            blur -= 1
+            cv2.setTrackbarPos("blur", winName, blur)
+        blurred = cv2.GaussianBlur(converted, (blur, blur), 0)
+
+    if type == 0:
+        (T, updated) = cv2.threshold(blurred, 155, 255, cv2.THRESH_BINARY_INV)
+    elif type == 1:
+        (T, updated) = cv2.threshold(blurred, 155, 255, cv2.THRESH_BINARY)
+    else:
+        (T, threshInv) = cv2.threshold(blurred, 155, 255, cv2.THRESH_BINARY_INV)
+        updated = cv2.bitwise_and(image, image, mask = threshInv)
 
     cv2.imshow(winName, updated)
 
@@ -142,9 +169,9 @@ image = cv2.imread(args["image"])           # The image the user would like to u
 winName = "Default"                         # Name of the window
 
 # Lists of options
-editOptions = ["tester", "move", "arithmetic", "blur", "sharpen"]
+editOptions = ["tester", "move", "arithmetic", "blur", "sharpen", "threshold", "back"]
 intialOptions = ["edit", "data", "save", "quit"]
-dataOptions = ["show histogram"]
+dataOptions = ["show histogram", "back"]
 
 # State tracking variables
 EDITED = False
@@ -154,11 +181,13 @@ DISPLAY_HIST = False
 # Main loop
 while CONTINUE:
     cv2.imshow(winName, image)              # Displays the window
+    print("\n  -- MAIN MENU --\n")          # UI Display
     print("What would you like to do?")     # User prompt
     option = getInput(intialOptions)        # Gets the user's input
 
     # Checks if the user would like to edit their image
     if option == "edit":
+        print("\n  -- EDIT MENU --\n")
         option = getInput(editOptions)
         if option == "tester":
             cv2.createTrackbar('slider', winName, 0, 255, on_change) # Creates the trackbar
@@ -177,21 +206,32 @@ while CONTINUE:
         elif option == "sharpen":
             cv2.createTrackbar('range', winName, 0, 15, on_change_sharpen) # Creates the trackbar
             cv2.createTrackbar('intensity', winName, 0, 51, on_change_sharpen) # Creates the trackbar
+        elif option == "threshold":
+            cv2.createTrackbar('type', winName, 0, 2, on_change_threshold) # Creates the trackbar
+            cv2.createTrackbar('blur', winName, 0, 51, on_change_threshold) # Creates the trackbar
+        #elif option == "back":
+            #pass
         else:
             print("ERROR: Recieved a 'valid' input with no function")
-            
+        
         cv2.waitKey(0)
-        image = updated
+        try:
+            image = updated
+        except:
+            pass
         # Redefines the updated image
         cv2.destroyAllWindows() 
         EDITED = True # Allows the user to save edits
 
     # Checks if the user would like to view the images data
     elif option == "data":
+        print("\n  -- DATA MENU --\n")
         option = getInput(dataOptions)
         if option == "show histogram":
             displayHistogram(image)
             DISPLAY_HIST = True
+        elif option == "back":
+            pass
         else:
             print("ERROR: Recieved a 'valid' input with no function")
 
