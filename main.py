@@ -11,7 +11,7 @@ def getInput(choices):
     helpTracker = 0
     while True:
         choice = str(input(" --> ")).lower()
-        if choice == "options":
+        if choice in ["options", "see options", "help", "h"]:
             print("Your possible choices are the following:")
             for i in range(len(choices)):
                 print(str(i+1) + ") " + choices[i])
@@ -85,25 +85,79 @@ def on_change_arithmetic(val):
 
 #-----------------------------------------------------------------#
 
+def on_change_blur(val):
+    type = int(cv2.getTrackbarPos("type", winName))
+    intensity = int(cv2.getTrackbarPos("intensity", winName))
+
+    global updated
+
+    if intensity == 0:
+        updated = image
+    else:
+        if type == 0:
+            updated = cv2.blur(image, (intensity, intensity))
+        elif type == 1:
+            if (intensity % 2) > 0:
+                updated = cv2.GaussianBlur(image, (intensity, intensity), 0)
+            else:
+                print("Gaussian blur does not work for even values!")
+                updated = image
+        else:
+            if (intensity % 2) > 0:
+                updated = cv2.medianBlur(image, intensity)
+            else:
+                print("Median blur does not work for even values!")
+                updated = image
+
+    cv2.imshow(winName, updated)
+
+
+#-----------------------------------------------------------------#
+
+def on_change_sharpen(val):
+    range = int(cv2.getTrackbarPos("range", winName))
+    intensity = int(cv2.getTrackbarPos("intensity", winName))
+
+    global updated
+
+    if intensity == 0:
+        updated = image
+    else:
+        if (intensity % 2) > 0:
+            updated = cv2.bilateralFilter(image, range, intensity, intensity)
+        else:
+            print("Bilateral blurring does not work for even intensity values!")
+            updated = image
+
+    cv2.imshow(winName, updated)
+
+#-----------------------------------------------------------------#
+
 # Gets the image from the user
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--image", required = True, help = "Path to the image")
 args = vars(ap.parse_args())
 
-image = cv2.imread(args["image"]) # The image the user would like to use
-winName = "Default" # Name of the window
+image = cv2.imread(args["image"])           # The image the user would like to use
+winName = "Default"                         # Name of the window
 
-editOptions = ["tester", "move", "arithmetic"]
+# Lists of options
+editOptions = ["tester", "move", "arithmetic", "blur", "sharpen"]
 intialOptions = ["edit", "data", "save", "quit"]
 dataOptions = ["show histogram"]
+
+# State tracking variables
 EDITED = False
 CONTINUE = True
 DISPLAY_HIST = False
-while CONTINUE:
-    cv2.imshow(winName, image)
-    print("What would you like to do?")
-    option = getInput(intialOptions)
 
+# Main loop
+while CONTINUE:
+    cv2.imshow(winName, image)              # Displays the window
+    print("What would you like to do?")     # User prompt
+    option = getInput(intialOptions)        # Gets the user's input
+
+    # Checks if the user would like to edit their image
     if option == "edit":
         option = getInput(editOptions)
         if option == "tester":
@@ -117,6 +171,14 @@ while CONTINUE:
         elif option == "arithmetic":
             cv2.createTrackbar('type', winName, 0, 1, on_change_arithmetic) # Creates the trackbar
             cv2.createTrackbar('change', winName, 0, 255, on_change_arithmetic) # Creates the trackbar
+        elif option == "blur":
+            cv2.createTrackbar('type', winName, 0, 2, on_change_blur) # Creates the trackbar
+            cv2.createTrackbar('intensity', winName, 0, 15, on_change_blur) # Creates the trackbar
+        elif option == "sharpen":
+            cv2.createTrackbar('range', winName, 0, 15, on_change_sharpen) # Creates the trackbar
+            cv2.createTrackbar('intensity', winName, 0, 51, on_change_sharpen) # Creates the trackbar
+        else:
+            print("ERROR: Recieved a 'valid' input with no function")
             
         cv2.waitKey(0)
         image = updated
@@ -124,12 +186,16 @@ while CONTINUE:
         cv2.destroyAllWindows() 
         EDITED = True # Allows the user to save edits
 
+    # Checks if the user would like to view the images data
     elif option == "data":
         option = getInput(dataOptions)
         if option == "show histogram":
             displayHistogram(image)
             DISPLAY_HIST = True
+        else:
+            print("ERROR: Recieved a 'valid' input with no function")
 
+    # Checks if the user would like save the image
     elif option == "save":
         if EDITED:
             print("What would you like to name your image?")
@@ -138,9 +204,11 @@ while CONTINUE:
         else:
             print("You haven't changed the image!")
 
+    # Checks if the user would like to quit
     elif option == "quit":
         CONTINUE = False
 
+    # Displays error message if input is recieved but no action is take
     else:
         print("ERROR: Recieved a 'valid' input with no function")
         
