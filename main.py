@@ -160,23 +160,58 @@ def on_change_threshold(val):
 
 #-----------------------------------------------------------------#
 
+def on_change_edge(val):
+    blur = int(cv2.getTrackbarPos("blur", winName))
+    low = int(cv2.getTrackbarPos("low thresh", winName))
+    high = int(cv2.getTrackbarPos("high thresh", winName))
+    contour = int(cv2.getTrackbarPos("contours", winName))
+    global updated
+
+    converted = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # Corrects the blur
+    if blur == 0:
+        blurred = image
+    else:
+        if (blur % 2) == 0:
+            blur -= 1
+            cv2.setTrackbarPos("blur", winName, blur)
+        blurred = cv2.GaussianBlur(converted, (blur, blur), 0)
+    
+    # Adds contours if necessary
+    if contour == 0:
+        updated = cv2.Canny(blurred, low, high)
+        newState = "contours off"
+    elif contour == 1:
+        edged = cv2.Canny(blurred, low, high)
+        cnts = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cnts = imutils.grab_contours(cnts)
+        updated = image.copy()
+        cv2.drawContours(updated, cnts, -1, (255, 0, 0), 2)
+        newState = "contours on"
+    
+    cv2.imshow(winName, updated)
+
+
+    
+
+#-----------------------------------------------------------------#
+
 # Gets the image from the user
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--image", required = True, help = "Path to the image")
 args = vars(ap.parse_args())
 
 image = cv2.imread(args["image"])           # The image the user would like to use
-winName = "Default"                         # Name of the window
+winName = "Window"                          # Name of the window
 
 # Lists of options
-editOptions = ["tester", "move", "arithmetic", "blur", "sharpen", "threshold", "back"]
+editOptions = ["tester", "move", "arithmetic", "blur", "sharpen", "threshold", "edges", "back"]
 intialOptions = ["edit", "data", "save", "quit"]
 dataOptions = ["show histogram", "back"]
 
 # State tracking variables
 EDITED = False
 CONTINUE = True
-DISPLAY_HIST = False
 
 # Main loop
 while CONTINUE:
@@ -192,44 +227,54 @@ while CONTINUE:
         if option == "tester":
             cv2.createTrackbar('slider', winName, 0, 255, on_change) # Creates the trackbar
         elif option == "move":
-            cv2.createTrackbar('rotation', winName, 0, 360, on_change_move) # Creates the trackbar
-            cv2.createTrackbar('x', winName, 0, 100, on_change_move) # Creates the trackbar
-            cv2.setTrackbarMin('x', winName, -100) # Redefines trackbar bounds
-            cv2.createTrackbar('y', winName, 0, 100, on_change_move) # Creates the trackbar
-            cv2.setTrackbarMin('y', winName, -100) # Redefines trackbar bounds
+            # Creates the necessary trackbars and redefines their bounds
+            cv2.createTrackbar('rotation', winName, 0, 360, on_change_move) 
+            cv2.createTrackbar('x', winName, 0, 100, on_change_move) 
+            cv2.setTrackbarMin('x', winName, -100) 
+            cv2.createTrackbar('y', winName, 0, 100, on_change_move) 
+            cv2.setTrackbarMin('y', winName, -100) 
         elif option == "arithmetic":
-            cv2.createTrackbar('type', winName, 0, 1, on_change_arithmetic) # Creates the trackbar
-            cv2.createTrackbar('change', winName, 0, 255, on_change_arithmetic) # Creates the trackbar
+            # Creates the necessary trackbars
+            cv2.createTrackbar('type', winName, 0, 1, on_change_arithmetic)
+            cv2.createTrackbar('change', winName, 0, 255, on_change_arithmetic)
         elif option == "blur":
-            cv2.createTrackbar('type', winName, 0, 2, on_change_blur) # Creates the trackbar
-            cv2.createTrackbar('intensity', winName, 0, 15, on_change_blur) # Creates the trackbar
+            # Creates the necessary trackbars
+            cv2.createTrackbar('type', winName, 0, 2, on_change_blur)
+            cv2.createTrackbar('intensity', winName, 0, 15, on_change_blur)
         elif option == "sharpen":
-            cv2.createTrackbar('range', winName, 0, 15, on_change_sharpen) # Creates the trackbar
-            cv2.createTrackbar('intensity', winName, 0, 51, on_change_sharpen) # Creates the trackbar
+            # Creates the necessary trackbars
+            cv2.createTrackbar('range', winName, 0, 15, on_change_sharpen)
+            cv2.createTrackbar('intensity', winName, 0, 51, on_change_sharpen)
         elif option == "threshold":
-            cv2.createTrackbar('type', winName, 0, 2, on_change_threshold) # Creates the trackbar
-            cv2.createTrackbar('blur', winName, 0, 51, on_change_threshold) # Creates the trackbar
-        #elif option == "back":
-            #pass
+            # Creates the necessary trackbars
+            cv2.createTrackbar('type', winName, 0, 2, on_change_threshold)
+            cv2.createTrackbar('blur', winName, 0, 51, on_change_threshold)
+        elif option == "edges":
+            # Creates the necessary trackbars
+            cv2.createTrackbar('blur', winName, 0, 51, on_change_edge)
+            cv2.createTrackbar('low thresh', winName, 0, 1000, on_change_edge)
+            cv2.createTrackbar('high thresh', winName, 0, 1000, on_change_edge) 
+            cv2.createTrackbar('contours', winName, 0, 1, on_change_edge) 
+        elif option == "back":
+            pass
         else:
             print("ERROR: Recieved a 'valid' input with no function")
         
         cv2.waitKey(0)
         try:
-            image = updated
+            image = updated                 # Redefines the updated image
+            EDITED = True                   # Allows the user to save edits
         except:
             pass
-        # Redefines the updated image
-        cv2.destroyAllWindows() 
-        EDITED = True # Allows the user to save edits
 
+        cv2.destroyAllWindows() 
+        
     # Checks if the user would like to view the images data
     elif option == "data":
-        print("\n  -- DATA MENU --\n")
-        option = getInput(dataOptions)
+        print("\n  -- DATA MENU --\n")      # Display
+        option = getInput(dataOptions)      # Recieves the user input
         if option == "show histogram":
-            displayHistogram(image)
-            DISPLAY_HIST = True
+            displayHistogram(image)         # Displays the histogram if chosen
         elif option == "back":
             pass
         else:
@@ -237,10 +282,12 @@ while CONTINUE:
 
     # Checks if the user would like save the image
     elif option == "save":
+        # Only lets the user save their image if it is edited
         if EDITED:
+            # Gets the desired filename and saves it
             print("What would you like to name your image?")
             fname = str(input(" --> "))
-            cv2.imwrite("C:/Users/George/OneDrive/Desktop/ADVHCS/projects/OpenCV_Project/edited/" + fname, image) # Saves the edited image
+            cv2.imwrite("C:/Users/George/OneDrive/Desktop/ADVHCS/projects/OpenCV_Project/edited/" + fname, image)
         else:
             print("You haven't changed the image!")
 
