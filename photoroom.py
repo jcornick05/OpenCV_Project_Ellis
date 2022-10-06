@@ -43,11 +43,34 @@ def displayHistogram(image):
 
 #-----------------------------------------------------------------#
 
-def on_change(val):
-    imageCopy = image.copy()
+def getDrawingData(winName):
+    r = int(cv2.getTrackbarPos("r", winName))
+    g = int(cv2.getTrackbarPos("g", winName))
+    b = int(cv2.getTrackbarPos("b", winName))
+    radius = int(cv2.getTrackbarPos("radius", winName))
+    return (b, g, r), radius
 
-    cv2.putText(imageCopy, str(val), (0, imageCopy.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 0), 4)
-    cv2.imshow(winName, imageCopy)
+    return
+
+def draw_dot(event, x, y, flags, param):
+    global DRAWING, updated
+    updated = image
+    color, radius = getDrawingData(winName)
+    try:
+        if event == cv2.EVENT_LBUTTONUP:
+            DRAWING = False
+        elif event == cv2.EVENT_LBUTTONDOWN or DRAWING:
+            cv2.circle(updated, (x,y), radius, color, -1)
+            DRAWING = True
+    except:
+        DRAWING = False
+
+    cv2.imshow(winName, updated)
+
+#-----------------------------------------------------------------#
+
+def on_change_nothing(val):
+    pass
 
 #-----------------------------------------------------------------#
 
@@ -191,8 +214,40 @@ def on_change_edge(val):
     
     cv2.imshow(winName, updated)
 
+def edge_mask(image, size, blur):
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.medianBlur(gray, blur)
+    edges = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, size, blur)
+    return edges
 
-    
+def on_change_cartoon(val):
+    if val == 1:
+        edges = cv2.bitwise_not(cv2.Canny(image, 100, 200))
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        gray = cv2.medianBlur(gray, 5)
+        dst = cv2.edgePreservingFilter(image, flags=2, sigma_s=64, sigma_r=0.25)
+        updated = cv2.bitwise_and(dst, dst, mask=edges)
+
+        cv2.imshow(winName, updated)
+    else:
+        cv2.imshow(winName, image)
+
+#-----------------------------------------------------------------#
+   
+def on_change_sketch(val):
+    type = int(cv2.getTrackbarPos("color", winName))
+    sigma_s = int(cv2.getTrackbarPos("neighborhood", winName))
+    sigma_r = int(cv2.getTrackbarPos("averaging", winName))
+    shade_factor = int(cv2.getTrackbarPos("shade", winName))
+
+    gray_sketch, color_sketch = cv2.pencilSketch(image, sigma_s = sigma_s, sigma_r = sigma_r/100, shade_factor = shade_factor/100)
+
+    if type == 1:
+        updated = color_sketch
+    else:
+        updated = gray_sketch
+
+    cv2.imshow(winName, updated)
 
 #-----------------------------------------------------------------#
 
@@ -205,7 +260,7 @@ image = cv2.imread(args["image"])           # The image the user would like to u
 winName = "Window"                          # Name of the window
 
 # Lists of options
-editOptions = ["tester", "move", "arithmetic", "blur", "sharpen", "threshold", "edges", "back"]
+editOptions = ["draw", "move", "arithmetic", "blur", "sharpen", "threshold", "edges", "cartoon", "sketch", "back"]
 intialOptions = ["edit", "data", "save", "quit"]
 dataOptions = ["show histogram", "back"]
 
@@ -224,8 +279,13 @@ while CONTINUE:
     if option == "edit":
         print("\n  -- EDIT MENU --\n")
         option = getInput(editOptions)
-        if option == "tester":
-            cv2.createTrackbar('slider', winName, 0, 255, on_change) # Creates the trackbar
+        if option == "draw":
+            # Creates the necessary trackbars and sets up moue function
+            cv2.setMouseCallback(winName, draw_dot)
+            cv2.createTrackbar('r', winName, 0, 255, on_change_nothing)
+            cv2.createTrackbar('g', winName, 0, 255, on_change_nothing)
+            cv2.createTrackbar('b', winName, 0, 255, on_change_nothing)
+            cv2.createTrackbar('radius', winName, 0, 10, on_change_nothing)
         elif option == "move":
             # Creates the necessary trackbars and redefines their bounds
             cv2.createTrackbar('rotation', winName, 0, 360, on_change_move) 
@@ -255,6 +315,13 @@ while CONTINUE:
             cv2.createTrackbar('low thresh', winName, 0, 1000, on_change_edge)
             cv2.createTrackbar('high thresh', winName, 0, 1000, on_change_edge) 
             cv2.createTrackbar('contours', winName, 0, 1, on_change_edge) 
+        elif option == "cartoon":
+            cv2.createTrackbar('on/off', winName, 0, 1, on_change_cartoon)
+        elif option == "sketch":
+            cv2.createTrackbar('color', winName, 0, 1, on_change_sketch)
+            cv2.createTrackbar('neighborhood', winName, 0, 200, on_change_sketch)
+            cv2.createTrackbar('averaging', winName, 0, 10, on_change_sketch)
+            cv2.createTrackbar('shade', winName, 0, 10, on_change_sketch)
         elif option == "back":
             pass
         else:
@@ -287,7 +354,7 @@ while CONTINUE:
             # Gets the desired filename and saves it
             print("What would you like to name your image?")
             fname = str(input(" --> "))
-            cv2.imwrite("C:/Users/George/OneDrive/Desktop/ADVHCS/projects/OpenCV_Project/edited/" + fname, image)
+            cv2.imwrite("edited/" + fname, image)
         else:
             print("You haven't changed the image!")
 
