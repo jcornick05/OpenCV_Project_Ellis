@@ -5,9 +5,26 @@ import cv2
 import imutils
 import numpy as np
 
-#-----------------------------------------------------------------#
+#-----------------------------------------------------------------------------#
 
-def getInput(choices):
+def getNumVersion(list):
+    """
+    Purpose: Returns numeric version of a given list
+    Parameters: A list to evaluate (list)
+    Return VAL: A list of numbers (list)
+    """
+    listNums = []
+    for i in range(len(list)):
+        listNums.append(str(i + 1))
+    return listNums
+
+def getInput(choices, choiceNums):
+    """
+    Purpose: Get user input for a given list of options
+    Parameters: The two lists defining input options, one of the strings (list) 
+    and one of the numeric values that represent those strings (list)
+    Return VAL: The user's desired choice
+    """
     helpTracker = 0
     while True:
         choice = str(input(" --> ")).lower()
@@ -17,15 +34,22 @@ def getInput(choices):
                 print(str(i+1) + ") " + choices[i])
         elif choice in choices:
             return choice
+        elif choice in choiceNums:
+            return choices[int(choice)-1]
         else:
             print("Please enter a valid option!")
             helpTracker += 1
             if helpTracker >= 3:
                 print("You can see all your options by entering 'Options'")
 
-#-----------------------------------------------------------------#
+#-----------------------------------------------------------------------------#
 
 def displayHistogram(image):
+    """
+    Purpose: Display a histogram for a given image using opencv
+    Parameters: The image to display a histogram of
+    Return VAL: None
+    """
     chans = cv2.split(image)
     color = "b", "g", "r"
     plt.figure()
@@ -41,18 +65,30 @@ def displayHistogram(image):
     hist = cv2.calcHist([image], [0, 1, 2], None, [8, 8, 8], [0, 256, 0, 256, 0, 256])
     plt.show()
 
-#-----------------------------------------------------------------#
+#-----------------------------------------------------------------------------#
 
 def getDrawingData(winName):
+    """
+    Purpose: Get the slider values for color and radius in a certain window
+    Parameters: The window in which the sliders reside
+    Return VAL: The selected color and selected radius
+    """
     r = int(cv2.getTrackbarPos("r", winName))
     g = int(cv2.getTrackbarPos("g", winName))
     b = int(cv2.getTrackbarPos("b", winName))
     radius = int(cv2.getTrackbarPos("radius", winName))
     return (b, g, r), radius
 
-    return
+#-----------------------------------------------------------------------------#
 
 def draw_dot(event, x, y, flags, param):
+    """
+    Purpose: Draws a dot on the screen for a give point if the players clicks
+    and then shows the new image
+    Parameters: The mouse click event, the x and y value of the mouse, any flags
+    or other paramters
+    Return VAL: None
+    """
     global DRAWING, updated
     updated = image
     color, radius = getDrawingData(winName)
@@ -67,19 +103,28 @@ def draw_dot(event, x, y, flags, param):
 
     cv2.imshow(winName, updated)
 
-#-----------------------------------------------------------------#
+#-----------------------------------------------------------------------------#
 
 def on_change_nothing(val):
+    """
+    Purpose: Has no action but exists for sliders that don't need a normal 
+    on_change function
+    Parameters: The slider val
+    Return VAL: None
+    """
     pass
 
-#-----------------------------------------------------------------#
+#-----------------------------------------------------------------------------#
 
 def on_change_move(val):
-    #print(val)
+    """
+    Purpose: Moves image position based on slider values
+    Parameters: The slider val
+    Return VAL: None
+    """
     x_val = int(cv2.getTrackbarPos("x", winName))
     y_val = int(cv2.getTrackbarPos("y", winName))
     r_val = int(cv2.getTrackbarPos("rotation", winName))
-    #imageCopy = image.copy()
     
     global updated
 
@@ -88,9 +133,14 @@ def on_change_move(val):
 
     cv2.imshow(winName, updated)
 
-#-----------------------------------------------------------------#
+#-----------------------------------------------------------------------------#
 
 def on_change_arithmetic(val):
+    """
+    Purpose: Changes arithmetic values of the image based on slider values
+    Parameters: The slider val
+    Return VAL: None
+    """
     type = int(cv2.getTrackbarPos("type", winName))
     change_val = int(cv2.getTrackbarPos("change", winName))
 
@@ -105,9 +155,14 @@ def on_change_arithmetic(val):
 
     cv2.imshow(winName, updated)
 
-#-----------------------------------------------------------------#
+#-----------------------------------------------------------------------------#
 
 def on_change_blur(val):
+    """
+    Purpose: Blurs the image based on slider values
+    Parameters: The slider val
+    Return VAL: None
+    """
     type = int(cv2.getTrackbarPos("type", winName))
     intensity = int(cv2.getTrackbarPos("intensity", winName))
 
@@ -134,10 +189,14 @@ def on_change_blur(val):
 
     cv2.imshow(winName, updated)
 
-
-#-----------------------------------------------------------------#
+#-----------------------------------------------------------------------------#
 
 def on_change_sharpen(val):
+    """
+    Purpose: Sharpens image based on slider values 
+    Parameters: The slider val
+    Return VAL: None
+    """
     range = int(cv2.getTrackbarPos("range", winName))
     intensity = int(cv2.getTrackbarPos("intensity", winName))
 
@@ -154,9 +213,14 @@ def on_change_sharpen(val):
 
     cv2.imshow(winName, updated)
 
-#-----------------------------------------------------------------#
+#-----------------------------------------------------------------------------#
 
 def on_change_threshold(val):
+    """
+    Purpose: Thresholds the image based on slider values
+    Parameters: The slider val
+    Return VAL: None
+    """
     type = int(cv2.getTrackbarPos("type", winName))
     blur = int(cv2.getTrackbarPos("blur", winName))
 
@@ -181,9 +245,14 @@ def on_change_threshold(val):
 
     cv2.imshow(winName, updated)
 
-#-----------------------------------------------------------------#
+#-----------------------------------------------------------------------------#
 
 def on_change_edge(val):
+    """
+    Purpose: Applies various forms of edging based on slider values
+    Parameters: The slider val
+    Return VAL: None
+    """
     blur = int(cv2.getTrackbarPos("blur", winName))
     low = int(cv2.getTrackbarPos("low thresh", winName))
     high = int(cv2.getTrackbarPos("high thresh", winName))
@@ -214,14 +283,17 @@ def on_change_edge(val):
     
     cv2.imshow(winName, updated)
 
-def edge_mask(image, size, blur):
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    blurred = cv2.medianBlur(gray, blur)
-    edges = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, size, blur)
-    return edges
+#-----------------------------------------------------------------------------#
 
 def on_change_cartoon(val):
+    """
+    Purpose: Applies a cartoon effect to the image the user choose to turn it on
+    Parameters: The slider val
+    Return VAL: None
+    """
     if val == 1:
+        global updated
+
         edges = cv2.bitwise_not(cv2.Canny(image, 100, 200))
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         gray = cv2.medianBlur(gray, 5)
@@ -232,15 +304,24 @@ def on_change_cartoon(val):
     else:
         cv2.imshow(winName, image)
 
-#-----------------------------------------------------------------#
+#-----------------------------------------------------------------------------#
    
 def on_change_sketch(val):
+    """
+    Purpose: Applies a sketch effect to the image based on slider values
+    Parameters: The slider val
+    Return VAL: None
+    """
     type = int(cv2.getTrackbarPos("color", winName))
     sigma_s = int(cv2.getTrackbarPos("neighborhood", winName))
     sigma_r = int(cv2.getTrackbarPos("averaging", winName))
     shade_factor = int(cv2.getTrackbarPos("shade", winName))
 
-    gray_sketch, color_sketch = cv2.pencilSketch(image, sigma_s = sigma_s, sigma_r = sigma_r/100, shade_factor = shade_factor/100)
+    gray_sketch, color_sketch = cv2.pencilSketch(image, sigma_s = sigma_s, 
+                                                 sigma_r = sigma_r/100, 
+                                                 shade_factor = shade_factor/100)
+
+    global updated
 
     if type == 1:
         updated = color_sketch
@@ -249,7 +330,7 @@ def on_change_sketch(val):
 
     cv2.imshow(winName, updated)
 
-#-----------------------------------------------------------------#
+#-----------------------------------------------------------------------------#
 
 # Gets the image from the user
 ap = argparse.ArgumentParser()
@@ -260,9 +341,14 @@ image = cv2.imread(args["image"])           # The image the user would like to u
 winName = "Window"                          # Name of the window
 
 # Lists of options
-editOptions = ["draw", "move", "arithmetic", "blur", "sharpen", "threshold", "edges", "cartoon", "sketch", "back"]
-intialOptions = ["edit", "data", "save", "quit"]
+initialOptions = ["edit", "data", "save", "quit"]
+initialNums = getNumVersion(initialOptions)
+editOptions = ["draw", "move", "arithmetic", "blur", "sharpen", "threshold", 
+               "edges", "cartoon", "sketch", "back"]
+editNums = getNumVersion(editOptions)
 dataOptions = ["show histogram", "back"]
+dataNums = getNumVersion(dataOptions)
+
 
 # State tracking variables
 EDITED = False
@@ -273,12 +359,12 @@ while CONTINUE:
     cv2.imshow(winName, image)              # Displays the window
     print("\n  -- MAIN MENU --\n")          # UI Display
     print("What would you like to do?")     # User prompt
-    option = getInput(intialOptions)        # Gets the user's input
+    option = getInput(initialOptions, initialNums)        # Gets the user's input
 
     # Checks if the user would like to edit their image
     if option == "edit":
         print("\n  -- EDIT MENU --\n")
-        option = getInput(editOptions)
+        option = getInput(editOptions, editNums)
         if option == "draw":
             # Creates the necessary trackbars and sets up moue function
             cv2.setMouseCallback(winName, draw_dot)
@@ -339,7 +425,7 @@ while CONTINUE:
     # Checks if the user would like to view the images data
     elif option == "data":
         print("\n  -- DATA MENU --\n")      # Display
-        option = getInput(dataOptions)      # Recieves the user input
+        option = getInput(dataOptions, dataNums)      # Recieves the user input
         if option == "show histogram":
             displayHistogram(image)         # Displays the histogram if chosen
         elif option == "back":
@@ -366,6 +452,4 @@ while CONTINUE:
     else:
         print("ERROR: Recieved a 'valid' input with no function")
         
-
-    
-cv2.destroyAllWindows()
+cv2.destroyAllWindows()                     # Dstroys all remaining windows
